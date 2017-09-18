@@ -7,7 +7,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://build-a-blog:GJqHxp3hiinzIPvh@localhost:8889/build-a-blog'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:WR34Y9MD3PICfHO9@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
@@ -17,13 +17,27 @@ class Blog(db.Model):
     post_title = db.Column(db.String(1000))
     post_body = db.Column(db.String(50000))
     pub_date = db.Column(db.DateTime)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __init__(self, post_title, post_body, pub_date=None):
+        self.owner = owner
         self.post_title = post_title
         self.post_body = post_body
         if pub_date is None:
             pub_date = datetime.utcnow()
         self.pub_date = pub_date
+        
+
+class User(db.Model):
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(120))
+    password = db.Column(db.String(120)) # TODO: hash this later
+    blogs = db.relationship('Blog', backref='owner')
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
 
 
 @app.route('/blog', methods=['GET'])
@@ -42,6 +56,8 @@ def is_not_empty(value):
 @app.route('/newpost', methods=['GET', 'POST'])
 def new_post():
 
+    owner = User.query.filter_by(id=session['id']).first()
+
     title_error = ""
     body_error = ""
 
@@ -55,7 +71,7 @@ def new_post():
             body_error += "This field cannot be empty. "
 
         if not title_error and not body_error:
-            new_post = Blog(post_title, post_body)
+            new_post = Blog(post_title, post_body, owner)
             db.session.add(new_post)
             db.session.commit()
             obj = db.session.query(Blog).order_by(Blog.id.desc()).first()
