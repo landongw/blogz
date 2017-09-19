@@ -1,6 +1,6 @@
-"""This script runs a simple blog website"""
+"""This app runs a blog with multiple users. NOTE: reset, db user/pass, secret key, and password hashing. """
 
-from flask import Flask, request, escape, redirect, render_template
+from flask import Flask, request, escape, redirect, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
 import re
 from datetime import datetime
@@ -9,6 +9,7 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:WR34Y9MD3PICfHO9@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
+app.secret_key = "3AqR6cKGTJ7FRkn.VTtw3"
 db = SQLAlchemy(app)
 
 class Blog(db.Model):
@@ -39,6 +40,22 @@ class User(db.Model):
         self.username = username
         self.password = password
 
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and user.password == password:
+            session['username'] = username # Use redis in production
+            # flash('Logged In')
+            return redirect('/')
+        else:
+            # TODO: explain why login failed
+            flash('User/password incorrect, or user does not exist.', 'error')
+            pass
+
+    return render_template('login.html')
 
 @app.route('/blog', methods=['GET'])
 def blog_page():
