@@ -1,55 +1,65 @@
-"""This app runs a blog with multiple users. NOTE: reset, db user/pass, secret key, and password hashing. """
+"""This app runs a blog with multiple users. NOTE: reset, db user/pass,
+secret key, and password hashing before use. """
 
-from flask import Flask, request, escape, redirect, render_template, flash
-from flask_sqlalchemy import SQLAlchemy
 import re
 from datetime import datetime
+from flask import Flask, request, escape, redirect, render_template, session, flash
+from flask_sqlalchemy import SQLAlchemy
+
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:WR34Y9MD3PICfHO9@localhost:8889/blogz'
+app.config['SQLALCHEMY_DATABASE_URI'] = ("mysql+pymysql://blogz:"
+                                         "WR34Y9MD3PICfHO9"
+                                         "@localhost:8889/blogz")
 app.config['SQLALCHEMY_ECHO'] = True
 app.secret_key = "3AqR6cKGTJ7FRkn.VTtw3"
 db = SQLAlchemy(app)
 
-class Blog(db.Model):
 
-    id = db.Column(db.Integer, primary_key=True)
+class Blog(db.Model):
+    """ Creates the Blog table and constructor """
+
+    post_id = db.Column(db.Integer, primary_key=True)
     post_title = db.Column(db.String(1000))
     post_body = db.Column(db.String(50000))
     pub_date = db.Column(db.DateTime)
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
 
-    def __init__(self, post_title, post_body, pub_date=None):
+    def __init__(self, owner, post_title, post_body, pub_date=None):
         self.owner = owner
         self.post_title = post_title
         self.post_body = post_body
         if pub_date is None:
             pub_date = datetime.utcnow()
         self.pub_date = pub_date
-        
+
 
 class User(db.Model):
-    
-    id = db.Column(db.Integer, primary_key=True)
+    """ Createst the User table and constructor """
+
+    user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120))
-    password = db.Column(db.String(120)) # TODO: hash this later
+    password = db.Column(db.String(120))  # TODO: hash this later
     blogs = db.relationship('Blog', backref='owner')
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
 
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    """ Handles user login """
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:
-            session['username'] = username # Use redis in production
+            session['username'] = username  # Use redis in production
             # flash('Logged In')
-            return redirect('/')
+            return redirect('/blog')
         else:
             # TODO: explain why login failed
             flash('User/password incorrect, or user does not exist.', 'error')
@@ -57,23 +67,60 @@ def login():
 
     return render_template('login.html')
 
+
+@app.route('/signup', methods=['POST', 'GET'])
+def register():
+    """ Handles user signup """
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        verify = request.form['verify']
+        new_user = User(username, password)
+
+        # TODO: validate fields
+
+        existing_user = User.query.filter_by(username=username).first()  # checks if user already exists
+        if not existing_user and username and password and password == verify:
+            db.session.add(new_user)
+            db.session.commit()
+            session['username'] = username
+            return redirect('/blog')
+        else:
+            # TODO: explain why registration failed
+            pass
+
+    return render_template('/signup.html')
+
+
 @app.route('/blog', methods=['GET'])
 def blog_page():
+    """ Returns the main blog page """
+
     titles = Blog.query.all()
     return render_template('blog_index.html', title="Blog Name", titles=titles)
 
+
 @app.route('/newpost')
 def index():
+    """ Returns a template to submit a new post """
+
     return render_template('/new_post.html')
 
+
 def is_not_empty(value):
+    """ Tests if a field is not empty """
+
     if (re.compile('.')).match(value):
         return True
 
+
 @app.route('/newpost', methods=['GET', 'POST'])
 def new_post():
+    """ Submits the new post to the database and
+    redirects the user to the new post """
 
-    owner = User.query.filter_by(id=session['id']).first()
+    owner = User.query.filter_by(username=session['username']).first()
 
     title_error = ""
     body_error = ""
@@ -88,25 +135,29 @@ def new_post():
             body_error += "This field cannot be empty. "
 
         if not title_error and not body_error:
-            new_post = Blog(post_title, post_body, owner)
-            db.session.add(new_post)
+            create_post = Blog(post_title, post_body, owner)
+            db.session.add(create_post)
             db.session.commit()
-            obj = db.session.query(Blog).order_by(Blog.id.desc()).first()
-            post_id = str(obj.id)
-            return redirect("/single-post/?id=" + post_id)
-        else:
-            return render_template('new_post.html', title="New Post", 
-                                   title_error=title_error, post_title=post_title, 
-                                   body_error=body_error, post_body=post_body)
+            obj = db.session.query(Blog).order_by(Blog.post_id.desc()).first()
+            post_id = str(obj.post_id)
+            return redirect("/single-post/?post_id=" + post_id)
+        return render_template('new_post.html', title="New Post",
+                               title_error=title_error,
+                               post_title=post_title,
+                               body_error=body_error,
+                               post_body=post_body)
+
 
 # @app.route('/single-post/<int:id>')
 @app.route('/single-post/')
-def single_post(id = 0):
-    id = request.args.get('id', id)
-    post = Blog.query.get(id)
+def single_post(post_id=0):
+    """ Returns a template with a single post page """
+
+    post_id = request.args.get('post_id', post_id)
+    post = Blog.query.get(post_id)
 
     return render_template('single_post.html', post=post)
-    # return "id is {}".format(id)
+    # return "post_id is {}".format(post_id)
 
 if __name__ == '__main__':
     app.run()
