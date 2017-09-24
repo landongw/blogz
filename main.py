@@ -192,6 +192,14 @@ def register():
                            verify_error=verify_error)
 
 
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    """ Logs the user out """
+
+    del session['username']
+    return redirect('/blog')
+
+
 @app.route('/blog', methods=['GET'])
 def blog_page():
     """ Returns the main blog page """
