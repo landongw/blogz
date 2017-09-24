@@ -4,10 +4,13 @@
 <h1>Signup</h1>
 <form action="/signup" method="post">
     <label for="username">Username</label>
+    <p class="error">{{username_error}}</p>
     <input name="username" type="username" value="{{ username }}">
     <label for="password">Password</label>
+    <p class="error">{{password_error}}</p>
     <input name="password" type="password">
     <label for="verify">Verify Password</label>
+    <p class="error">{{verify_error}}</p>
     <input name="verify" type="password">
     <button type="submit" value="Register">Register</button>
 </form>

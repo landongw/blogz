@@ -48,9 +48,8 @@ class User(db.Model):
         self.password = password
 
 
-
-def is_full(value):
-    """ Tests if the field contains something """
+def is_not_empty(value):
+    """ Tests if a field is not empty """
 
     if (re.compile('.')).match(value):
         return True
@@ -71,9 +70,9 @@ def passwords_match(password1, password2):
 
 
 def is_valid_length(value):
-    """ Tests if the input is of valid length ( > 3 and < 20) """
+    """ Tests if the input is of valid length ( > 3 and < 200) """
 
-    if re.compile('^.{3,20}$').match(value):
+    if re.compile('^.{3,200}$').match(value):
         return True
 
 
@@ -83,7 +82,6 @@ def is_email(email):
     if (re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
             .match(email)):
         return True
-
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -100,15 +98,12 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:
             session['username'] = username  # Use redis in production
-            # flash('Logged In')
             return redirect('/newpost')
         elif user and user.password != password:
             password_error = 'Password incorrect.'
         elif not user:
             username_error = 'User does not exist.'
         else:
-            # TODO: explain why login failed
-            flash('User/password incorrect, or user does not exist.', 'error')
             pass
 
     return render_template('login.html',
@@ -121,25 +116,80 @@ def login():
 def register():
     """ Handles user signup """
 
+    username_error = ""
+    password_error = ""
+    verify_error = ""
+    username = ""
+    password = ""
+    verify = ""
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         verify = request.form['verify']
         new_user = User(username, password)
 
-        # TODO: validate fields
+        # CHECKS FOR EMPTY FIELDS
+        if not is_not_empty(username):
+            username = ""
+            username_error += "This field cannot be empty. "
 
-        existing_user = User.query.filter_by(username=username).first()  # checks if user already exists
-        if not existing_user and username and password and password == verify:
+        if not is_not_empty(password):
+            password = ""
+            password_error += "This field cannot be empty. "
+
+        if not is_not_empty(verify):
+            verify = ""
+            verify_error += "This field cannot be empty. "
+
+        # CHECKS IF VALID LENGTH
+        if not is_valid_length(username):
+            username_error += "Must be between 3 and 200 characters long. "
+
+        if not is_valid_length(password):
+            password = ""
+            password_error += "Must be between 3 and 200 characters long. "
+
+        if not is_valid_length(verify):
+            verify = ""
+            verify_error += "Must be between 3 and 200 characters long. "
+
+        # CHECKS FOR SPACES
+        if not has_no_spaces(username):
+            username_error += "May not contain spaces. "
+
+        if not has_no_spaces(password):
+            password = ""
+            password_error += "May not contain spaces. "
+
+        if not has_no_spaces(verify):
+            verify = ""
+            verify_error += "May not contain spaces. "
+
+        # CHECKS IF PASSWORDS MATCH
+        if not passwords_match(password, verify):
+            password = ""
+            verify = ""
+            password_error += "Passwords do not match. "
+
+        # CHECKS FOR EXISTING USER
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            username_error = "User already exists."
+
+        if not existing_user and not password_error and not username_error and not verify_error:
             db.session.add(new_user)
             db.session.commit()
             session['username'] = username
-            return redirect('/blog')
+            return redirect('/newpost')
         else:
-            # TODO: explain why registration failed
             pass
 
-    return render_template('/signup.html')
+    return render_template('/signup.html',
+                           username=username,
+                           username_error=username_error,
+                           password_error=password_error,
+                           verify_error=verify_error)
 
 
 @app.route('/blog', methods=['GET'])
@@ -155,13 +205,6 @@ def index():
     """ Returns a template to submit a new post """
 
     return render_template('/new_post.html')
-
-
-def is_not_empty(value):
-    """ Tests if a field is not empty """
-
-    if (re.compile('.')).match(value):
-        return True
 
 
 @app.route('/newpost', methods=['GET', 'POST'])
