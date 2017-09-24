@@ -88,7 +88,7 @@ def is_email(email):
 def require_login():
     """ Requires login to access protected content """
 
-    allowed_routes = ['blog_page', 'register', 'login', 'single_post']               # THIS IS BROKEN, NOT WORKING WITH BLOG AND SINGLE-POST
+    allowed_routes = ['blog_page', 'register', 'login', 'single_post', 'index']
     if request.endpoint not in allowed_routes and 'username' not in session:
         return redirect('/login')
     elif request.endpoint is 'register' or request.endpoint is 'login' and 'username' in session:
@@ -211,6 +211,14 @@ def logout():
     return redirect('/blog')
 
 
+@app.route('/')
+def index():
+    """ Displays the home page with all users """
+
+    users = User.query.all()
+    return render_template('index.html', title="Home", users=users)
+
+
 @app.route('/blog', methods=['GET'])
 def blog_page():
     """ Returns the main blog page """
@@ -223,7 +231,7 @@ def blog_page():
 def new_post_index():
     """ Returns a template to submit a new post """
 
-    return render_template('/new_post.html')
+    return render_template('/new_post.html', title="New Post")
 
 
 @app.route('/newpost', methods=['GET', 'POST'])
