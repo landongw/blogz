@@ -48,9 +48,51 @@ class User(db.Model):
         self.password = password
 
 
+
+def is_full(value):
+    """ Tests if the field contains something """
+
+    if (re.compile('.')).match(value):
+        return True
+
+
+def has_no_spaces(value):
+    """ Tests if the field contains blank spaces """
+
+    if not (re.compile(r'\s')).search(value):
+        return True
+
+
+def passwords_match(password1, password2):
+    """ Tests if the passwords match """
+
+    if re.compile(password1).match(password2):
+        return True
+
+
+def is_valid_length(value):
+    """ Tests if the input is of valid length ( > 3 and < 20) """
+
+    if re.compile('^.{3,20}$').match(value):
+        return True
+
+
+def is_email(email):
+    """ Tests if the input is a valid email format """
+
+    if (re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+            .match(email)):
+        return True
+
+
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     """ Handles user login """
+
+    username_error = ""
+    password_error = ""
+    username = ""
 
     if request.method == 'POST':
         username = request.form['username']
@@ -59,13 +101,20 @@ def login():
         if user and user.password == password:
             session['username'] = username  # Use redis in production
             # flash('Logged In')
-            return redirect('/blog')
+            return redirect('/newpost')
+        elif user and user.password != password:
+            password_error = 'Password incorrect.'
+        elif not user:
+            username_error = 'User does not exist.'
         else:
             # TODO: explain why login failed
             flash('User/password incorrect, or user does not exist.', 'error')
             pass
 
-    return render_template('login.html')
+    return render_template('login.html',
+                           username_error=username_error,
+                           password_error=password_error,
+                           username=username)
 
 
 @app.route('/signup', methods=['POST', 'GET'])
@@ -135,7 +184,7 @@ def new_post():
             body_error += "This field cannot be empty. "
 
         if not title_error and not body_error:
-            create_post = Blog(post_title, post_body, owner)
+            create_post = Blog(owner, post_title, post_body)
             db.session.add(create_post)
             db.session.commit()
             obj = db.session.query(Blog).order_by(Blog.post_id.desc()).first()

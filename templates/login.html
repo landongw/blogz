@@ -5,8 +5,10 @@
 <p>If you don't have an account, you may <a href="/signup">register</a> for one.</p>
 <form action="/login" method="post">
     <label for="username">Username</label>
+    <p class="error">{{username_error}}</p>
     <input name="username" type="text" value="{{ username }}">
     <label for="password">Password</label>
+    <p class="error">{{password_error}}</p>
     <input name="password" type="password">
     <button type="submit" value="Login">Login</button>
 </form>
