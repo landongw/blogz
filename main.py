@@ -84,6 +84,17 @@ def is_email(email):
         return True
 
 
+@app.before_request
+def require_login():
+    """ Requires login to access protected content """
+
+    allowed_routes = ['blog_page', 'register', 'login', 'single_post']               # THIS IS BROKEN, NOT WORKING WITH BLOG AND SINGLE-POST
+    if request.endpoint not in allowed_routes and 'username' not in session:
+        return redirect('/login')
+    elif request.endpoint is 'register' or request.endpoint is 'login' and 'username' in session:
+        return redirect('/blog')
+
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     """ Handles user login """
@@ -209,14 +220,14 @@ def blog_page():
 
 
 @app.route('/newpost')
-def index():
+def new_post_index():
     """ Returns a template to submit a new post """
 
     return render_template('/new_post.html')
 
 
 @app.route('/newpost', methods=['GET', 'POST'])
-def new_post():
+def submit_new_post():
     """ Submits the new post to the database and
     redirects the user to the new post """
 
