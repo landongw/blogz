@@ -13,7 +13,6 @@
             <a href="/"><img src="{{ url_for('static', filename='images/no-logo.png') }}" class="logo"></a>
             <nav class="main-nav">
                 <a href="/blog" class="menu-item">Blogs</a>
-
                 {% if not session.username %}
                     <a href="{{ url_for('login') }}" class="menu-item">Login</a>
                     <a href="/signup" class="menu-item">Signup</a>
@@ -21,7 +20,6 @@
                     <a href="/newpost" class="menu-item">New Post</a>
                     <a href="{{ url_for('logout') }}" class="menu-item">Logout</a>
                 {% endif %}
-
             </nav>
         </div>
     </header>

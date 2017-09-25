@@ -2,5 +2,7 @@
 
 {% block content %}
             <h1>{{post.post_title}}</h1>
+            <h6><a href="{{ url_for('blog_page', user_id=post.owner_id)}}">Written by {{post.owner.username}}</a></h6>
+            <br>
             <p>{{post.post_body}}</p>
 {% endblock %}

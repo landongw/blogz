@@ -4,6 +4,7 @@
             <h1>Blog Name</h1>
             {% for title in titles|sort(reverse=True, attribute="pub_date") %}
                 <h2><a href="{{ '/single-post/?post_id=%s'%title.post_id }}">{{title.post_title}}</a></h2>
+                <h6><a href="{{ url_for('blog_page', user_id=title.owner_id)}}">Written by {{title.owner.username}}</a></h6>
                 <p>{{title.post_body}}</p>
                 <hr>
             {% endfor %}
