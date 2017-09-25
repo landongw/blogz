@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+            <h1>Posts by {{owner.username}}</h1>
+            {% for title in titles|sort(reverse=True, attribute="pub_date") %}
+                <h2><a href="{{ '/single-post/?post_id=%s'%title.post_id }}">{{title.post_title}}</a></h2>
+                <h6>Written by {{owner.username}}</h6>
+                <p>{{title.post_body}}</p>
+                <hr>
+            {% endfor %}
+{% endblock %}

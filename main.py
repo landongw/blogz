@@ -88,10 +88,10 @@ def is_email(email):
 def require_login():
     """ Requires login to access protected content """
 
-    allowed_routes = ['blog_page', 'register', 'login', 'single_post', 'index']
+    allowed_routes = ['blog_page', 'register', 'login', 'single_post', 'index', 'blog_index', 'blog_page']
     if request.endpoint not in allowed_routes and 'username' not in session:
         return redirect('/login')
-    elif request.endpoint is 'register' or request.endpoint is 'login' and 'username' in session:
+    elif request.endpoint is 'login' and 'username' in session:
         return redirect('/blog')
 
 
@@ -218,13 +218,20 @@ def index():
     users = User.query.all()
     return render_template('index.html', title="Home", users=users)
 
-
+# WORKING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 @app.route('/blog', methods=['GET'])
-def blog_page():
+def blog_page(user_id=0):
     """ Returns the main blog page """
 
-    titles = Blog.query.all()
-    return render_template('blog_index.html', title="Blog Name", titles=titles)
+    user_id = request.args.get('user_id', user_id)
+
+    if not user_id:
+        titles = Blog.query.all()
+        return render_template('blog_index.html', title="Blog Name", titles=titles)
+    elif user_id:
+        owner = User.query.get(user_id)
+        titles = Blog.query.filter(Blog.owner_id == user_id)
+        return render_template('user_blog.html', title="User Blog", user_id=user_id, titles=titles, owner=owner)
 
 
 @app.route('/newpost')

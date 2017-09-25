@@ -3,7 +3,7 @@
 {% block content %}
             <h1>All Users</h1>
             {% for user in users|sort(reverse=True, attribute="username") %}
-                <h2><a href="{{ '/single-post/?post_id=%s'%title.post_id }}">{{user.username}}</a></h2>
+                <h2><a href="{{ url_for('blog_page', username=user.username, user_id=user.user_id)}}">{{user.username}}</a></h2>
                 <p></p>
                 <hr>
             {% endfor %}
