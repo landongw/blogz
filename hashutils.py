@@ -1,28 +1,29 @@
-""" Runs hashing functions """
+""" Runs hashing functions
 
-import hashlib
-import random
-import string
+    Documentation: https://flask-bcrypt.readthedocs.io/en/latest/
+"""
 
-
-def make_salt():
-    """ Creates a salt """
-
-    return ''.join([random.choice(string.ascii_letters) for x in range(5)])
+from flask import Flask
+from flask.ext.bcrypt import Bcrypt
 
 
-def make_pw_hash(password, salt=None):
-    """ Returns a hashed string in place of the password """
+app = Flask(__name__)
+bcrypt = Bcrypt(app)
 
-    salt = make_salt()
-    lhash = hashlib.sha256(str.encode(password)).hexdigest()
-    return '{0},{1}'.format(lhash, salt)
+
+def make_pw_hash(password):
+    """ Returns a hashed string with salt in place of the password """
+
+    # salt = make_salt()
+    # salt = bcrypt.gensalt(12)
+    lhash = bcrypt.generate_password_hash(password, 15).decode('utf8')
+    # lhash = hashlib.sha256(str.encode(password)).hexdigest()
+    return '{0}'.format(lhash)
 
 
 def check_pw_hash(password, lhash):
     """ Checks if the password and hash match """
 
-    salt = lhash.split(',')[1]
-    if make_pw_hash(password, salt) == lhash:
+    if bcrypt.check_password_hash(lhash, password):
         return True
     return False
