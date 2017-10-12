@@ -248,7 +248,7 @@ def submit_new_post():
     redirects the user to the new post """
 
     owner = User.query.filter_by(username=session['username']).first()
-
+    print("OWNER ID: ", owner.username)
     title_error = ""
     body_error = ""
 
